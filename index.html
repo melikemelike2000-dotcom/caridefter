@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0C447C" />
+  <title>CariDefter</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon.svg" />
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Ekranlar JS ile doldurulur -->
+    <main id="view"></main>
+
+    <!-- Alt navigasyon -->
+    <nav id="tabbar">
+      <button class="tab" data-route="home" aria-label="Ana ekran"><i class="ic">grid</i><span>Özet</span></button>
+      <button class="tab" data-route="people" aria-label="Kişiler"><i class="ic">users</i><span>Cari</span></button>
+      <button class="tab fab" data-route="add" aria-label="Yeni kayıt"><i class="ic">plus</i></button>
+      <button class="tab" data-route="reports" aria-label="Raporlar"><i class="ic">chart</i><span>Rapor</span></button>
+      <button class="tab" data-route="settings" aria-label="Yönetim"><i class="ic">gear</i><span>Yönetim</span></button>
+    </nav>
+  </div>
+
+  <!-- Modal katmanı -->
+  <div id="modal-root"></div>
+  <div id="toast-root"></div>
+
+  <script src="db.js"></script>
+  <script src="ui.js"></script>
+  <script src="app.js"></script>
+  <script src="auth.js"></script>
+</body>
+</html>

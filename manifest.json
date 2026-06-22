@@ -1,0 +1,15 @@
+{
+  "name": "CariDefter — Harcama & Cari Takip",
+  "short_name": "CariDefter",
+  "description": "Kredi kartı, nakit ve cari hesap takibi. Hızlı kayıt, rapor, bildirim.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F4F6FA",
+  "theme_color": "#0C447C",
+  "lang": "tr",
+  "icons": [
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
