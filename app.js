@@ -134,40 +134,55 @@
     UI.sheet('Yeni kayıt', addSheetHTML(), mountAddSheet);
   }
   function addSheetHTML() {
+    const dirIco = { expense:'up', income:'down', debt:'clock', payment:'check' };
     return `
-      <div class="seg" id="seg-dir">
+      <div class="seg dir-seg" id="seg-dir">
         ${Object.entries(DIRS).map(([k,v])=>`<button data-dir="${k}" class="${entry.dir===k?'on':''}">${v.label}</button>`).join('')}
       </div>
 
-      <div class="amount-display"><span class="cur">₺ </span><span class="v" id="amt">0</span></div>
+      <div class="amount-hero" id="amt-hero">
+        <span class="cur">₺</span><span class="v" id="amt">0</span>
+      </div>
 
-      <div class="chips" id="catchips" style="margin-bottom:6px"></div>
+      <div class="qe-label">Kategori</div>
+      <div class="chips qe-cats" id="catchips"></div>
 
-      <div class="keypad" id="keypad" style="margin-top:12px">
+      <div class="keypad" id="keypad">
         ${[1,2,3,4,5,6,7,8,9].map(n=>`<button data-k="${n}">${n}</button>`).join('')}
-        <button data-k="000">000</button><button data-k="0">0</button><button data-k="back">⌫</button>
+        <button data-k="000">000</button><button data-k="0">0</button><button data-k="back" class="kp-back">${icon('back',22)}</button>
       </div>
 
-      <div class="row-grid" style="margin-top:14px">
-        <div class="field" style="margin:0"><label>Hesap / kart</label><select id="f-acct"></select></div>
-        <div class="field" style="margin:0"><label>Tarih</label><input type="date" id="f-date" value="${entry.date}"></div>
+      <div class="qe-label" style="margin-top:16px">Detaylar</div>
+      <div class="qe-card">
+        <div class="qe-row"><span class="qe-ic">${icon('bank',18)}</span><select id="f-acct"></select></div>
+        <div class="qe-row"><span class="qe-ic">${icon('calendar',18)}</span><input type="date" id="f-date" value="${entry.date}"></div>
+        <div class="qe-row"><span class="qe-ic">${icon('user',18)}</span><select id="f-person"></select></div>
+        <div class="qe-row"><span class="qe-ic">${icon('note',18)}</span><input id="f-desc" placeholder="Açıklama — ne alındı/satıldı, fiş no..."></div>
       </div>
-      <div class="field"><label>Kişi / cari (opsiyonel)</label><select id="f-person"></select></div>
-      <div class="field"><label>Açıklama (ne alındı/satıldı, fiş no...)</label><input id="f-desc" placeholder="Örn. un çuvalı, fiş #1234"></div>
 
-      <button class="btn btn-primary" id="save-btn" style="margin-top:6px">${icon('check',20)} Kaydet</button>
+      <div class="qe-foot"><button class="btn btn-primary" id="save-btn">${icon('check',20)} Kaydet</button></div>
     `;
   }
   function mountAddSheet(b) {
     const amtEl = b.querySelector('#amt');
+    const heroEl = b.querySelector('#amt-hero');
+    const saveEl = b.querySelector('#save-btn');
     const paintAmt = () => amtEl.textContent = Math.round(entry.amount).toLocaleString('tr-TR');
+    const applyDir = () => {
+      const c = DIRS[entry.dir].color;
+      amtEl.style.color = entry.amount > 0 ? c : 'var(--text)';
+      heroEl.style.background = tint(c, 0.10);
+      saveEl.style.background = c;
+    };
 
     // segment
     b.querySelector('#seg-dir').addEventListener('click', e => {
       const btn = e.target.closest('[data-dir]'); if (!btn) return;
       entry.dir = btn.dataset.dir;
       b.querySelectorAll('#seg-dir button').forEach(x => x.classList.toggle('on', x.dataset.dir===entry.dir));
+      applyDir();
     });
+    applyDir();
 
     // kategori çipleri
     const chips = b.querySelector('#catchips');
@@ -189,7 +204,7 @@
       else s = (s === '0' ? '' : s) + key;
       if (s.length > 12) return;
       entry.amount = parseInt(s || '0', 10);
-      paintAmt();
+      paintAmt(); applyDir();
     });
 
     // hesap & kişi selectleri

@@ -40,6 +40,7 @@ const UI = (() => {
     bill:'<path d="M6 2h12v20l-3-2-3 2-3-2-3 2zM9 7h6M9 11h6M9 15h4"/>',
     fridge:'<rect x="6" y="2" width="12" height="20" rx="2"/><path d="M6 10h12M10 5v2M10 13v3"/>',
     lock:'<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+    calendar:'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/>',
     star:'<path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9 6.8 19.2l1-5.8L3.5 9.2l5.9-.9z"/>',
   };
 
@@ -74,13 +75,18 @@ const UI = (() => {
   // ---- Sheet (alttan açılan modal)
   function sheet(title, innerHTML, onMount) {
     const root = document.getElementById('modal-root');
-    root.innerHTML = `<div class="sheet-backdrop"><div class="sheet" role="dialog">
-      <div class="grip"></div>
-      ${title ? `<h3>${title}</h3>` : ''}
+    root.innerHTML = `<div class="sheet-backdrop"><div class="sheet" role="dialog" aria-modal="true">
+      <div class="grip" title="Kapat"></div>
+      <div class="sheet-head">
+        <h3>${title || ''}</h3>
+        <button class="sheet-x" aria-label="Kapat">${icon('x',20)}</button>
+      </div>
       <div class="sheet-body">${innerHTML}</div>
     </div></div>`;
     const backdrop = root.querySelector('.sheet-backdrop');
     backdrop.addEventListener('click', e => { if (e.target === backdrop) closeSheet(); });
+    root.querySelector('.sheet-x').addEventListener('click', closeSheet);
+    root.querySelector('.grip').addEventListener('click', closeSheet);
     if (onMount) onMount(root.querySelector('.sheet-body'));
   }
   function closeSheet() { document.getElementById('modal-root').innerHTML = ''; }
