@@ -1,0 +1,8 @@
+{
+  "timezone": "Europe/Istanbul",
+  "reminders": [
+    { "day": 1, "text": "📊 CariDefter: Yeni ay başladı! Geçen ayın harcama/tahsilat özetini uygulamadan gözden geçir." },
+    { "day": 5, "text": "💳 CariDefter hatırlatma: Kart ödeme günü yaklaşıyor (ayın 5'i). Ödemeleri kontrol et." },
+    { "day": 25, "text": "🧾 CariDefter: Ay sonu yaklaşıyor. Eksik kayıt/fatura var mı, kontrol et." }
+  ]
+}

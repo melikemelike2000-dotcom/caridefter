@@ -1,0 +1,27 @@
+name: WhatsApp hatırlatmaları
+
+on:
+  schedule:
+    # Her gün 06:00 UTC = 09:00 Türkiye saati. reminders.json'daki güne göre mesaj atar.
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+    inputs:
+      test:
+        description: "Hemen test mesajı gönder"
+        type: boolean
+        default: true
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Hatırlatmaları gönder
+        run: node scripts/send-reminders.mjs
+        env:
+          CMB_PHONE: ${{ secrets.CMB_PHONE }}
+          CMB_APIKEY: ${{ secrets.CMB_APIKEY }}
+          FORCE_TEST: ${{ github.event_name == 'workflow_dispatch' && inputs.test }}
