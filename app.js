@@ -82,7 +82,7 @@
 
     view.innerHTML = `
       <div class="appbar"><div><h1>CariDefter</h1></div>
-        <span class="acct-icon" style="background:var(--surface);border:0.5px solid var(--line);color:var(--text-2)">${icon('bell',20)}</span>
+        <button class="bell-btn" id="home-bell" aria-label="Hatırlatmalar">${icon('bell',20)}${(() => { const u = DB.reminders().filter(r=>!r.sent).length; return u ? `<span class="bell-badge">${u}</span>` : ''; })()}</button>
       </div>
       <div class="hero">
         <div class="row">
@@ -108,6 +108,7 @@
     `;
 
     view.querySelectorAll('[data-go]').forEach(el => el.onclick = () => go(el.dataset.go));
+    view.querySelector('#home-bell').onclick = () => openRemindersSheet();
     view.querySelector('[data-add-acct]').onclick = () => openAccountSheet();
     view.querySelectorAll('[data-acct]').forEach(el => el.onclick = () => openAccountSheet(el.dataset.acct));
     view.querySelectorAll('[data-txn]').forEach(el => el.onclick = () => openTxnSheet(el.dataset.txn));
@@ -134,14 +135,16 @@
     UI.sheet('Yeni kayıt', addSheetHTML(), mountAddSheet);
   }
   function addSheetHTML() {
-    const dirIco = { expense:'up', income:'down', debt:'clock', payment:'check' };
     return `
+     <div class="qe-wrap">
       <div class="seg dir-seg" id="seg-dir">
         ${Object.entries(DIRS).map(([k,v])=>`<button data-dir="${k}" class="${entry.dir===k?'on':''}">${v.label}</button>`).join('')}
       </div>
 
       <div class="amount-hero" id="amt-hero">
-        <span class="cur">₺</span><span class="v" id="amt">0</span>
+        <span class="dir-pill" id="dir-pill"></span>
+        <div class="amt-line"><span class="cur">₺</span><span class="v" id="amt">0</span></div>
+        <div class="amt-hint">Tutarı gir</div>
       </div>
 
       <div class="qe-label">Kategori</div>
@@ -160,19 +163,28 @@
         <div class="qe-row"><span class="qe-ic">${icon('note',18)}</span><input id="f-desc" placeholder="Açıklama — ne alındı/satıldı, fiş no..."></div>
       </div>
 
+      <div class="qe-label" style="margin-top:16px">Hatırlatma</div>
+      <div class="qe-card">
+        <div class="set-row"><span class="lab"><span class="qe-ic">${icon('bell',18)}</span> Hatırlatma oluştur</span><span class="sw" id="rem-sw"><i></i></span></div>
+        <div id="rem-fields" style="display:none">
+          <div class="qe-row"><span class="qe-ic">${icon('clock',18)}</span><input type="datetime-local" id="rem-dt"></div>
+          <div class="qe-row"><span class="qe-ic">${icon('note',18)}</span><input id="rem-msg" placeholder="Mesaj (boş = otomatik oluşturulur)"></div>
+        </div>
+      </div>
+
       <div class="qe-foot"><button class="btn btn-primary" id="save-btn">${icon('check',20)} Kaydet</button></div>
+     </div>
     `;
   }
   function mountAddSheet(b) {
     const amtEl = b.querySelector('#amt');
-    const heroEl = b.querySelector('#amt-hero');
-    const saveEl = b.querySelector('#save-btn');
+    const pillEl = b.querySelector('#dir-pill');
     const paintAmt = () => amtEl.textContent = Math.round(entry.amount).toLocaleString('tr-TR');
     const applyDir = () => {
-      const c = DIRS[entry.dir].color;
-      amtEl.style.color = entry.amount > 0 ? c : 'var(--text)';
-      heroEl.style.background = tint(c, 0.10);
-      saveEl.style.background = c;
+      const d = DIRS[entry.dir];
+      pillEl.textContent = d.label;
+      pillEl.style.background = tint(d.color, 0.18);
+      pillEl.style.color = '#fff';
     };
 
     // segment
@@ -183,6 +195,18 @@
       applyDir();
     });
     applyDir();
+
+    // hatırlatma alanı
+    const remSw = b.querySelector('#rem-sw');
+    const remFields = b.querySelector('#rem-fields');
+    const remDt = b.querySelector('#rem-dt');
+    remDt.value = defaultReminderLocal();
+    remSw.addEventListener('click', () => {
+      entry.reminderOn = !entry.reminderOn;
+      remSw.classList.toggle('on', entry.reminderOn);
+      remFields.style.display = entry.reminderOn ? 'block' : 'none';
+      if (entry.reminderOn) requestNotifyPermission();
+    });
 
     // kategori çipleri
     const chips = b.querySelector('#catchips');
@@ -224,12 +248,77 @@
 
     b.querySelector('#save-btn').onclick = () => {
       if (!entry.amount || entry.amount <= 0) { UI.toast('Tutar gir'); return; }
-      DB.addTransaction({ dir: entry.dir, amount: entry.amount, accountId: entry.accountId, categoryId: entry.categoryId, personId: entry.personId || null, date: entry.date, description: entry.description.trim(), docNo: '' });
+      const txn = DB.addTransaction({ dir: entry.dir, amount: entry.amount, accountId: entry.accountId, categoryId: entry.categoryId, personId: entry.personId || null, date: entry.date, description: entry.description.trim(), docNo: '' });
       checkLimit(entry.accountId);
-      UI.closeSheet();
-      UI.toast('Kaydedildi ✓');
+
+      if (entry.reminderOn && remDt.value) {
+        const custom = b.querySelector('#rem-msg').value.trim();
+        const msg = custom || buildReminderMsg(txn);
+        DB.addReminder({ datetime: remDt.value, message: msg, txnId: txn.id });
+        UI.closeSheet();
+        UI.toast('Kaydedildi + hatırlatma kuruldu ✓');
+      } else {
+        UI.closeSheet();
+        UI.toast('Kaydedildi ✓');
+      }
       route = 'home'; render();
     };
+  }
+
+  // Hatırlatma için varsayılan tarih-saat (yarın 09:00), datetime-local biçiminde
+  function defaultReminderLocal() {
+    const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(9, 0, 0, 0);
+    const p = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+  }
+  function buildReminderMsg(t) {
+    const d = DIRS[t.dir];
+    const per = t.personId ? DB.person(t.personId) : null;
+    const parts = [`🔔 CariDefter: ${d.label} ${fmt(t.amount)}`];
+    if (per) parts.push(per.name);
+    if (t.description) parts.push(t.description);
+    return parts.join(' · ');
+  }
+  function requestNotifyPermission() {
+    if ('Notification' in window && Notification.permission === 'default') {
+      try { Notification.requestPermission(); } catch (e) {}
+    }
+  }
+  function fireReminder(r) {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      try { new Notification('CariDefter hatırlatma', { body: r.message, icon: 'icons/icon.svg' }); } catch (e) {}
+    }
+    sendWhatsAppAuto(r.message);
+    DB.updateReminder(r.id, { sent: true });
+  }
+  function checkReminders() {
+    const due = DB.dueReminders(new Date());
+    if (!due.length) return;
+    due.forEach(fireReminder);
+    UI.toast(`${due.length} hatırlatma gönderildi`);
+    if (route === 'home') render();
+  }
+
+  // Hatırlatmalar listesi (ana ekrandaki zil ikonundan açılır)
+  function openRemindersSheet() {
+    const rs = DB.reminders();
+    const fmtDT = (s) => { const d = new Date(s); const p=(n)=>String(n).padStart(2,'0'); return `${d.getDate()} ${MONTHS[d.getMonth()]} ${p(d.getHours())}:${p(d.getMinutes())}`; };
+    const rowHTML = (r) => `<div class="rem-row" data-rem="${r.id}">
+        <span class="rem-ic ${r.sent?'done':''}">${icon(r.sent?'check':'bell',18)}</span>
+        <div class="mid"><div class="t">${r.message}</div><div class="s">${fmtDT(r.datetime)}${r.sent?' · gönderildi':''}</div></div>
+        <button class="rem-del" data-del="${r.id}" aria-label="Sil">${icon('trash',16)}</button>
+      </div>`;
+    const upcoming = rs.filter(r => !r.sent);
+    const past = rs.filter(r => r.sent);
+    UI.sheet('Hatırlatmalar', `
+      ${rs.length ? '' : `<div class="empty"><div class="big">${icon('bell',28)}</div><p>Hatırlatma yok.</p><p class="muted" style="font-size:13px">Yeni kayıt eklerken "Hatırlatma oluştur" ile ekleyebilirsin.</p></div>`}
+      ${upcoming.length ? `<div class="qe-label">Yaklaşan</div><div class="qe-card">${upcoming.map(rowHTML).join('')}</div>` : ''}
+      ${past.length ? `<div class="qe-label" style="margin-top:16px">Geçmiş</div><div class="qe-card">${past.map(rowHTML).join('')}</div>` : ''}
+    `, (b) => {
+      b.querySelectorAll('[data-del]').forEach(el => el.onclick = () => {
+        DB.removeReminder(el.dataset.del); UI.closeSheet(); openRemindersSheet();
+      });
+    });
   }
 
   // limit kontrol → bildirim / WhatsApp önerisi
@@ -616,7 +705,14 @@
   }
 
   // ---- Başlat (giriş ekranından sonra Auth tarafından çağrılır)
-  window.CariApp = { start() { route = 'home'; render(); } };
+  let remTimer = null;
+  window.CariApp = { start() {
+    route = 'home'; render();
+    checkReminders();
+    if (remTimer) clearInterval(remTimer);
+    remTimer = setInterval(checkReminders, 60000);
+  } };
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) checkReminders(); });
 
   // Service worker (offline)
   if ('serviceWorker' in navigator) {

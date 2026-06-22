@@ -24,6 +24,7 @@ const DB = (() => {
     ],
     people: [],
     transactions: [],
+    reminders: [],
     rules: {
       limitPct: 90, limitWhatsapp: true, limitEmail: false,
       monthlyEmail: true, dueReminder: false,
@@ -35,7 +36,11 @@ const DB = (() => {
   function load() {
     try {
       const raw = localStorage.getItem(KEY);
-      if (raw) return JSON.parse(raw);
+      if (raw) {
+        const obj = JSON.parse(raw);
+        if (!obj.reminders) obj.reminders = []; // eski kayıtlar için
+        return obj;
+      }
     } catch (e) {}
     return JSON.parse(JSON.stringify(seed));
   }
@@ -87,6 +92,16 @@ const DB = (() => {
       return t;
     },
     removeTransaction(id) { state.transactions = state.transactions.filter(t => t.id !== id); save(); },
+
+    // ---- Hatırlatmalar
+    reminders: () => state.reminders,
+    addReminder(r) { r.id = uid('r'); r.sent = false; r.createdAt = new Date().toISOString(); state.reminders.unshift(r); save(); return r; },
+    updateReminder(id, patch) { const r = state.reminders.find(x => x.id === id); if (r) Object.assign(r, patch); save(); },
+    removeReminder(id) { state.reminders = state.reminders.filter(r => r.id !== id); save(); },
+    dueReminders(now) {
+      const t = (now || new Date()).getTime();
+      return state.reminders.filter(r => !r.sent && new Date(r.datetime).getTime() <= t);
+    },
 
     // ---- Hesaplamalar
     accountBalance(id) {
