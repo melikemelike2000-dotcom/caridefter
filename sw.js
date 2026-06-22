@@ -1,5 +1,5 @@
 /* CariDefter — çevrimdışı önbellek */
-const CACHE = 'caridefter-v2';
+const CACHE = 'caridefter-v3';
 const ASSETS = [
   './', './index.html', './styles.css', './db.js', './ui.js', './app.js', './auth.js',
   './manifest.json', './icons/icon.svg',

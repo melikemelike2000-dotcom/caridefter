@@ -4,7 +4,7 @@ const DB = (() => {
   const KEY = 'caridefter_v1';
 
   const seed = {
-    profile: { name: 'Ramazan Yedlir', email: '', whatsapp: '', pin: '' },
+    profile: { name: 'Ramazan Yedlir', email: '', whatsapp: '', pin: '', callmebotKey: '' },
     accounts: [
       { id: 'a1', name: 'Garanti BBVA', type: 'card', color: '#00A94F', limit: 0, dueDay: 1 },
       { id: 'a2', name: 'Ziraat Bankası', type: 'card', color: '#E2001A', limit: 0, dueDay: 1 },

@@ -225,8 +225,9 @@
     if (pct >= (DB.state.rules.limitPct || 90)) {
       setTimeout(() => {
         UI.toast(`⚠ ${a.name} limitin %${pct}'ine ulaştı`);
-        if (DB.state.rules.limitWhatsapp && DB.state.profile.whatsapp) {
-          // İleride otomatik gönderim; şimdilik bildirim
+        if (DB.state.rules.limitWhatsapp) {
+          const msg = `⚠ CariDefter uyarı: ${a.name} kartında ${fmt(bal)} harcama (limit ${fmt(a.limit)}, %${pct}). ${DB.state.profile.name||''}`;
+          if (sendWhatsAppAuto(msg)) UI.toast('WhatsApp uyarısı gönderildi');
         }
       }, 600);
     }
@@ -308,7 +309,10 @@
       <div class="card" style="padding:6px 14px 14px">
         <div class="field"><label>İşletme / ad</label><input id="p-name" value="${p.name||''}"></div>
         <div class="field"><label>E-posta (raporlar için)</label><input id="p-email" type="email" value="${p.email||''}" placeholder="mail@ornek.com"></div>
-        <div class="field" style="margin-bottom:6px"><label>WhatsApp no (CallMeBot için)</label><input id="p-wa" value="${p.whatsapp||''}" placeholder="+90 5xx xxx xx xx"></div>
+        <div class="field"><label>WhatsApp no (CallMeBot için)</label><input id="p-wa" value="${p.whatsapp||''}" placeholder="+90 5xx xxx xx xx"></div>
+        <div class="field" style="margin-bottom:8px"><label>CallMeBot API anahtarı</label><input id="p-cmb" value="${p.callmebotKey||''}" placeholder="örn. 123456"></div>
+        <button class="btn btn-ghost btn-sm" id="wa-test" style="width:100%;color:var(--green)">${icon('wa',16)} Test WhatsApp mesajı gönder</button>
+        <p class="muted" style="font-size:11.5px;margin:8px 2px 0">Ücretsiz otomatik WhatsApp için: WhatsApp'tan <b>+34 644 51 95 23</b> numarasına <b>"I allow callmebot to send me messages"</b> yaz, gelen API anahtarını yukarı gir.</p>
       </div>
 
       <div class="sec-head"><h2>Bankalar / Kartlar</h2><a data-add="acct">${icon('plus',14)} Banka ekle</a></div>
@@ -357,6 +361,13 @@
     p_name.onblur = () => DB.setProfile({ name: p_name.value.trim() });
     view.querySelector('#p-email').onblur = (e) => DB.setProfile({ email: e.target.value.trim() });
     view.querySelector('#p-wa').onblur = (e) => DB.setProfile({ whatsapp: e.target.value.trim() });
+    view.querySelector('#p-cmb').onblur = (e) => DB.setProfile({ callmebotKey: e.target.value.trim() });
+    view.querySelector('#wa-test').onclick = () => {
+      DB.setProfile({ whatsapp: view.querySelector('#p-wa').value.trim(), callmebotKey: view.querySelector('#p-cmb').value.trim() });
+      if (!DB.state.profile.whatsapp || !DB.state.profile.callmebotKey) return UI.toast('Önce WhatsApp no ve API anahtarı gir');
+      sendWhatsAppAuto(`✅ CariDefter test mesajı — kurulum çalışıyor! ${DB.state.profile.name||''}`);
+      UI.toast('Test gönderildi, WhatsApp\'ını kontrol et');
+    };
 
     view.querySelectorAll('[data-add]').forEach(el => el.onclick = () => {
       if (el.dataset.add.startsWith('cat')) openCategorySheet(null, render); else openAccountSheet(null);
@@ -506,7 +517,19 @@
     return `<div class="set-row"><span class="lab muted">${icon(ic,16)} ${label}</span><span style="font-weight:500;text-align:right">${val}</span></div>`;
   }
 
-  // ---------------- WHATSAPP ----------------
+  // ---------------- WHATSAPP (CallMeBot ile otomatik) ----------------
+  // Kendi WhatsApp numarana ücretsiz otomatik mesaj. CORS olmadan Image beacon ile tetiklenir.
+  function sendWhatsAppAuto(text) {
+    const p = DB.state.profile;
+    const phone = (p.whatsapp || '').replace(/[^\d]/g, '');
+    const key = (p.callmebotKey || '').trim();
+    if (!phone || !key) return false;
+    const url = `https://api.callmebot.com/whatsapp.php?phone=${phone}&text=${encodeURIComponent(text)}&apikey=${encodeURIComponent(key)}`;
+    const img = new Image();
+    img.src = url; // fire-and-forget
+    return true;
+  }
+
   function openWhatsApp(personId) {
     const p = DB.person(personId); if (!p) return;
     const bal = DB.personBalance(personId);
