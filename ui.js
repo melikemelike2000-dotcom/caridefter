@@ -109,5 +109,29 @@ const UI = (() => {
     });
   }
 
-  return { icon, fmt, fmtSigned, fmtDate, todayISO, initials, tint, MONTHS, sheet, closeSheet, toast, confirmSheet };
+  // Renk paletleri (ana vurgu rengi) — --navy-* değişkenlerini değiştirir
+  const ACCENTS = {
+    navy:   { name:'Lacivert', 400:'#378ADD', 600:'#185FA5', 800:'#0C447C', 900:'#042C53' },
+    teal:   { name:'Yeşil',    400:'#1D9E75', 600:'#0F8A63', 800:'#0A5A44', 900:'#063A2D' },
+    purple: { name:'Mor',      400:'#7F77DD', 600:'#534AB7', 800:'#3C3489', 900:'#26215C' },
+    coral:  { name:'Mercan',   400:'#F0785A', 600:'#D85A30', 800:'#9E3F1E', 900:'#6B2A13' },
+    pink:   { name:'Pembe',    400:'#E06A93', 600:'#C53E6B', 800:'#8E2A4C', 900:'#5E1B33' },
+    slate:  { name:'Antrasit', 400:'#64748B', 600:'#3E4A5E', 800:'#26303F', 900:'#161D27' },
+  };
+  function accents() { return ACCENTS; }
+  function applyTheme() {
+    const s = (typeof DB !== 'undefined' && DB.state.settings) || { theme:'auto', accent:'navy' };
+    const root = document.documentElement;
+    root.dataset.theme = s.theme || 'auto';
+    const a = ACCENTS[s.accent] || ACCENTS.navy;
+    root.style.setProperty('--navy-400', a[400]);
+    root.style.setProperty('--navy-600', a[600]);
+    root.style.setProperty('--navy-800', a[800]);
+    root.style.setProperty('--navy-900', a[900]);
+    const meta = document.querySelector('meta[name=theme-color]');
+    if (meta) meta.setAttribute('content', a[800]);
+  }
+
+  return { icon, fmt, fmtSigned, fmtDate, todayISO, initials, tint, MONTHS, sheet, closeSheet, toast, confirmSheet, applyTheme, accents };
 })();
+UI.applyTheme();

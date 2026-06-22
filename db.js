@@ -4,7 +4,8 @@ const DB = (() => {
   const KEY = 'caridefter_v1';
 
   const seed = {
-    profile: { name: 'Ramazan Yedlir', email: '', whatsapp: '', pin: '', callmebotKey: '' },
+    profile: { name: 'Ramazan Yedlir', email: '', whatsapp: '', pin: '', callmebotKey: '', photo: '' },
+    settings: { theme: 'auto', accent: 'navy' },
     accounts: [
       { id: 'a1', name: 'Garanti BBVA', type: 'card', color: '#00A94F', limit: 0, dueDay: 1 },
       { id: 'a2', name: 'Ziraat Bankası', type: 'card', color: '#E2001A', limit: 0, dueDay: 1 },
@@ -39,6 +40,7 @@ const DB = (() => {
       if (raw) {
         const obj = JSON.parse(raw);
         if (!obj.reminders) obj.reminders = []; // eski kayıtlar için
+        if (!obj.settings) obj.settings = { theme: 'auto', accent: 'navy' };
         return obj;
       }
     } catch (e) {}
@@ -60,6 +62,7 @@ const DB = (() => {
     // ---- Profil & kurallar
     setProfile(p) { Object.assign(state.profile, p); save(); },
     setRule(k, v) { state.rules[k] = v; save(); },
+    setSetting(k, v) { if (!state.settings) state.settings = {}; state.settings[k] = v; save(); },
 
     // ---- Hesaplar
     accounts: () => state.accounts,

@@ -28,10 +28,12 @@
   --shadow: 0 2px 10px rgba(4,44,83,0.06);
   --shadow-lg: 0 6px 24px rgba(4,44,83,0.12);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-top: env(safe-area-inset-top, 0px);
 }
 
+/* Koyu mod değişkenleri (otomatik veya manuel) */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg:        #0B1422;
     --surface:   #131F30;
     --surface-2: #1B2A3F;
@@ -47,6 +49,22 @@
     --shadow: 0 2px 10px rgba(0,0,0,0.3);
     --shadow-lg: 0 6px 24px rgba(0,0,0,0.45);
   }
+}
+:root[data-theme="dark"] {
+  --bg:        #0B1422;
+  --surface:   #131F30;
+  --surface-2: #1B2A3F;
+  --line:      rgba(255,255,255,0.08);
+  --line-2:    rgba(255,255,255,0.15);
+  --text:    #EAF0F8;
+  --text-2:  #9DAAC0;
+  --text-3:  #6B7890;
+  --navy-50: #16263B;
+  --green-bg:#10362B;
+  --red-bg:  #3A1A1A;
+  --amber-bg:#3A2A12;
+  --shadow: 0 2px 10px rgba(0,0,0,0.3);
+  --shadow-lg: 0 6px 24px rgba(0,0,0,0.45);
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -69,7 +87,7 @@ input, select, textarea { font-family: inherit; font-size: 16px; }
 .appbar {
   position: sticky; top: 0; z-index: 5;
   background: var(--bg);
-  padding: 14px 0 10px;
+  padding: calc(14px + var(--safe-top)) 0 10px;
   display: flex; align-items: center; justify-content: space-between;
 }
 .appbar h1 { font-size: 20px; font-weight: 600; margin: 0; }
@@ -210,7 +228,7 @@ input, select, textarea { font-family: inherit; font-size: 16px; }
 .sheet-backdrop { position: fixed; inset: 0; background: rgba(4,16,30,0.45); z-index: 30;
   display: flex; align-items: flex-end; justify-content: center; animation: fade .15s; }
 .sheet { width: 100%; max-width: 480px; background: var(--bg); border-radius: 22px 22px 0 0;
-  max-height: 92vh; overflow-y: auto; padding: 8px 16px calc(24px + var(--safe-bottom)); animation: slideup .22s; }
+  max-height: 90vh; overflow-y: auto; padding: calc(4px + var(--safe-top)) 16px calc(24px + var(--safe-bottom)); animation: slideup .22s; }
 .sheet .grip { width: 44px; height: 5px; border-radius: 4px; background: var(--line-2); margin: 8px auto 4px; cursor: pointer; }
 .sheet-head { position: sticky; top: 0; z-index: 3; background: var(--bg); display: flex; align-items: center; justify-content: space-between; padding: 4px 0 10px; }
 .sheet-head h3 { font-size: 18px; font-weight: 600; margin: 0; }
@@ -280,6 +298,18 @@ input, select, textarea { font-family: inherit; font-size: 16px; }
 
 .muted { color: var(--text-2); }
 .row-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* Profil fotoğrafı + tema renk noktaları */
+.hero .avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.pp-row { display: flex; align-items: center; gap: 14px; padding-bottom: 14px; margin-bottom: 8px; border-bottom: 0.5px solid var(--line); }
+.pp-avatar { width: 62px; height: 62px; border-radius: 50%; overflow: hidden; flex: none;
+  background: var(--navy-50); color: var(--navy-600); display: flex; align-items: center; justify-content: center;
+  font-weight: 600; font-size: 20px; }
+.pp-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.accent-dot { width: 34px; height: 34px; border-radius: 50%; cursor: pointer; }
+.accent-dot.sel { outline: 2px solid var(--text); outline-offset: 2px; }
+.lock-logo.has-photo { overflow: hidden; padding: 0; }
+.lock-logo.has-photo img { width: 100%; height: 100%; object-fit: cover; }
 
 /* ---------- Giriş / kilit ekranı ---------- */
 #lock { position: fixed; inset: 0; z-index: 100;

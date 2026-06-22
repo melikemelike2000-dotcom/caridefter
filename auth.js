@@ -33,12 +33,13 @@ const Auth = (() => {
 
   function paint(error) {
     const name = DB.state.profile.name || 'Hoş geldin';
+    const photo = DB.state.profile.photo;
     const dots = [0,1,2,3].map(i => `<span class="dot ${i < buf.length ? 'f' : ''}"></span>`).join('');
     const keys = [1,2,3,4,5,6,7,8,9].map(n => `<button data-d="${n}">${n}</button>`).join('');
     el().innerHTML = `
       <div class="lock-inner">
-        <div class="lock-logo">${UI.icon('lock',30)}</div>
-        <div class="lock-app">CariDefter</div>
+        <div class="lock-logo ${photo?'has-photo':''}">${photo ? `<img src="${photo}" alt="">` : UI.icon('lock',30)}</div>
+        <div class="lock-app">Gelir Gider Takibi</div>
         <div class="lock-hi">${mode==='enter' ? 'Merhaba, '+name : name}</div>
         <div class="lock-title">${titleText()}</div>
         <div class="lock-sub ${error?'err':''}">${error || subText()}</div>

@@ -11,6 +11,13 @@
     payment: { label: 'Ödeme',   sign: -1, color: '#185FA5' },
   };
   const ACCT_ICON = { card: 'bank', cash: 'cash', bank: 'wallet' };
+  // Yeni kayıt tutar kartı — yöne göre canlı gradyan
+  const DIR_GRAD = {
+    expense: 'linear-gradient(135deg,#FF8A5B,#E24B4A)',
+    income:  'linear-gradient(135deg,#3DD68C,#0F9D58)',
+    debt:    'linear-gradient(135deg,#FBC04C,#EF9F27)',
+    payment: 'linear-gradient(135deg,#4AA3E8,#185FA5)',
+  };
 
   // Türkiye bankaları — marka renkleriyle hazır seçim
   const BANKS = [
@@ -81,13 +88,13 @@
     }).join('');
 
     view.innerHTML = `
-      <div class="appbar"><div><h1>CariDefter</h1></div>
+      <div class="appbar"><div><h1>Gelir Gider Takibi</h1></div>
         <button class="bell-btn" id="home-bell" aria-label="Hatırlatmalar">${icon('bell',20)}${(() => { const u = DB.reminders().filter(r=>!r.sent).length; return u ? `<span class="bell-badge">${u}</span>` : ''; })()}</button>
       </div>
       <div class="hero">
         <div class="row">
           <div style="display:flex;align-items:center;gap:10px">
-            <div class="avatar">${initials(p.name||'A')}</div>
+            <div class="avatar">${p.photo ? `<img src="${p.photo}" alt="">` : initials(p.name||'A')}</div>
             <div><div style="font-size:12px;opacity:.85">Merhaba</div><div style="font-weight:600">${p.name||'Hoş geldin'}</div></div>
           </div>
         </div>
@@ -179,12 +186,16 @@
   function mountAddSheet(b) {
     const amtEl = b.querySelector('#amt');
     const pillEl = b.querySelector('#dir-pill');
+    const heroEl = b.querySelector('#amt-hero');
     const paintAmt = () => amtEl.textContent = Math.round(entry.amount).toLocaleString('tr-TR');
     const applyDir = () => {
       const d = DIRS[entry.dir];
       pillEl.textContent = d.label;
-      pillEl.style.background = tint(d.color, 0.18);
+      pillEl.style.background = 'rgba(255,255,255,0.22)';
       pillEl.style.color = '#fff';
+      heroEl.style.background = DIR_GRAD[entry.dir];
+      const sv = b.querySelector('#save-btn');
+      if (sv) sv.style.background = d.color;
     };
 
     // segment
@@ -410,13 +421,33 @@
       <div class="appbar"><h1>Yönetim</h1></div>
 
       <div class="sec-head"><h2>Profil & bildirim adresleri</h2></div>
-      <div class="card" style="padding:6px 14px 14px">
+      <div class="card" style="padding:14px">
+        <div class="pp-row">
+          <div class="pp-avatar" id="pp-photo">${p.photo ? `<img src="${p.photo}" alt="">` : initials(p.name||'?')}</div>
+          <div style="flex:1">
+            <div style="font-size:15px;font-weight:600">${p.name||'—'}</div>
+            <button class="btn btn-sm btn-ghost" id="pp-photo-btn" style="margin-top:6px">${icon('user',15)} Fotoğraf ${p.photo?'değiştir':'ekle'}</button>
+          </div>
+          <input type="file" id="pp-photo-file" accept="image/*" hidden>
+        </div>
         <div class="field"><label>İşletme / ad</label><input id="p-name" value="${p.name||''}"></div>
         <div class="field"><label>E-posta (raporlar için)</label><input id="p-email" type="email" value="${p.email||''}" placeholder="mail@ornek.com"></div>
         <div class="field"><label>WhatsApp no (CallMeBot için)</label><input id="p-wa" value="${p.whatsapp||''}" placeholder="+90 5xx xxx xx xx"></div>
         <div class="field" style="margin-bottom:8px"><label>CallMeBot API anahtarı</label><input id="p-cmb" value="${p.callmebotKey||''}" placeholder="örn. 123456"></div>
         <button class="btn btn-ghost btn-sm" id="wa-test" style="width:100%;color:var(--green)">${icon('wa',16)} Test WhatsApp mesajı gönder</button>
         <p class="muted" style="font-size:11.5px;margin:8px 2px 0">Ücretsiz otomatik WhatsApp için: numarayı rehbere kaydet, WhatsApp'tan <b>+34 684 72 39 62</b> numarasına <b>"I allow callmebot to send me messages"</b> yaz, gelen API anahtarını yukarı gir.</p>
+      </div>
+
+      <div class="sec-head"><h2>Görünüm</h2></div>
+      <div class="card" style="padding:14px">
+        <div style="font-size:13px;color:var(--text-2);margin-bottom:8px">Tema</div>
+        <div class="seg" id="theme-seg">
+          ${[['auto','Otomatik'],['light','Açık'],['dark','Koyu']].map(([k,l])=>`<button data-theme="${k}" class="${(DB.state.settings&&DB.state.settings.theme||'auto')===k?'on':''}">${l}</button>`).join('')}
+        </div>
+        <div style="font-size:13px;color:var(--text-2);margin:16px 0 10px">Ana renk</div>
+        <div class="chips" id="accent-row">
+          ${Object.entries(UI.accents()).map(([k,a])=>`<span class="accent-dot ${(DB.state.settings&&DB.state.settings.accent||'navy')===k?'sel':''}" data-accent="${k}" style="background:${a[600]}" title="${a.name}"></span>`).join('')}
+        </div>
       </div>
 
       <div class="sec-head"><h2>Bankalar / Kartlar</h2><a data-add="acct">${icon('plus',14)} Banka ekle</a></div>
@@ -484,6 +515,19 @@
       DB.setRule(k, v); el.classList.toggle('on', v);
     });
     view.querySelector('#limit-pct').onchange = (e) => DB.setRule('limitPct', parseInt(e.target.value));
+
+    view.querySelector('#theme-seg').onclick = (e) => {
+      const bt = e.target.closest('[data-theme]'); if (!bt) return;
+      DB.setSetting('theme', bt.dataset.theme); UI.applyTheme(); render();
+    };
+    view.querySelector('#accent-row').onclick = (e) => {
+      const dot = e.target.closest('[data-accent]'); if (!dot) return;
+      DB.setSetting('accent', dot.dataset.accent); UI.applyTheme(); render();
+    };
+    const photoFile = view.querySelector('#pp-photo-file');
+    view.querySelector('#pp-photo').onclick = () => photoFile.click();
+    view.querySelector('#pp-photo-btn').onclick = () => photoFile.click();
+    photoFile.onchange = (e) => loadProfilePhoto(e.target.files[0]);
 
     view.querySelector('#exp-json').onclick = exportBackup;
     view.querySelector('#imp-json').onclick = () => view.querySelector('#imp-file').click();
@@ -697,6 +741,30 @@
       catch (err) { UI.toast('Dosya okunamadı'); }
     };
     reader.readAsText(file);
+  }
+  function loadProfilePhoto(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const size = 256;
+        const s = Math.min(img.width, img.height);
+        const canvas = document.createElement('canvas');
+        canvas.width = size; canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, (img.width - s)/2, (img.height - s)/2, s, s, 0, 0, size, size);
+        try {
+          const data = canvas.toDataURL('image/jpeg', 0.85);
+          DB.setProfile({ photo: data });
+          UI.toast('Fotoğraf kaydedildi ✓');
+          render();
+        } catch (e) { UI.toast('Fotoğraf çok büyük'); }
+      };
+      img.onerror = () => UI.toast('Resim okunamadı');
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
   }
   function download(blob, name) {
     const url = URL.createObjectURL(blob);
