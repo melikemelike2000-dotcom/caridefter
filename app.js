@@ -312,7 +312,7 @@
         <div class="field"><label>WhatsApp no (CallMeBot için)</label><input id="p-wa" value="${p.whatsapp||''}" placeholder="+90 5xx xxx xx xx"></div>
         <div class="field" style="margin-bottom:8px"><label>CallMeBot API anahtarı</label><input id="p-cmb" value="${p.callmebotKey||''}" placeholder="örn. 123456"></div>
         <button class="btn btn-ghost btn-sm" id="wa-test" style="width:100%;color:var(--green)">${icon('wa',16)} Test WhatsApp mesajı gönder</button>
-        <p class="muted" style="font-size:11.5px;margin:8px 2px 0">Ücretsiz otomatik WhatsApp için: WhatsApp'tan <b>+34 644 51 95 23</b> numarasına <b>"I allow callmebot to send me messages"</b> yaz, gelen API anahtarını yukarı gir.</p>
+        <p class="muted" style="font-size:11.5px;margin:8px 2px 0">Ücretsiz otomatik WhatsApp için: numarayı rehbere kaydet, WhatsApp'tan <b>+34 684 72 39 62</b> numarasına <b>"I allow callmebot to send me messages"</b> yaz, gelen API anahtarını yukarı gir.</p>
       </div>
 
       <div class="sec-head"><h2>Bankalar / Kartlar</h2><a data-add="acct">${icon('plus',14)} Banka ekle</a></div>
