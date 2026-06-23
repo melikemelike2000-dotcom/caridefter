@@ -296,6 +296,23 @@ input, select, textarea { font-family: inherit; font-size: 16px; }
 
 .note { background: var(--amber-bg); color: var(--amber); border-radius: var(--r-sm); padding: 11px 13px; font-size: 12.5px; display: flex; gap: 8px; align-items: flex-start; }
 
+/* Rapor — detaylı */
+.rep-hero { background: var(--surface); border: 0.5px solid var(--line); border-radius: var(--r-md);
+  box-shadow: var(--shadow); padding: 16px; text-align: center; }
+.donut-wrap { display: flex; justify-content: center; margin: 8px 0 14px; }
+.donut { width: 168px; height: 168px; border-radius: 50%; position: relative; }
+.donut-hole { position: absolute; inset: 26px; background: var(--bg); border-radius: 50%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.legend-row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; }
+.legend-row + .legend-row { border-top: 0.5px solid var(--line); }
+.legend-row .dot { width: 12px; height: 12px; border-radius: 50%; flex: none; }
+.legend-row .lg-name { flex: 1; font-size: 14px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.legend-row .lg-val { font-weight: 600; font-size: 14px; }
+.legend-row .lg-pct { font-size: 12px; color: var(--text-2); min-width: 40px; text-align: right; }
+.rep-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.rep-stat { background: var(--surface); border: 0.5px solid var(--line); border-radius: var(--r-md);
+  padding: 12px 14px; box-shadow: var(--shadow); }
+
 .muted { color: var(--text-2); }
 .row-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 

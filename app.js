@@ -376,36 +376,94 @@
   }
 
   // ---------------- RAPORLAR ----------------
+  function conicStr(segs, total) {
+    const t = total || segs.reduce((s,x)=>s+x.value,0) || 1;
+    let acc = 0;
+    return segs.map(s => { const a=acc/t*100; acc+=s.value; const b=acc/t*100; return `${s.color} ${a}% ${b}%`; }).join(', ');
+  }
   function renderReports() {
-    const { exp, inc } = DB.monthTotals(repYear, repMonth);
-    const cats = DB.categoryTotals(repYear, repMonth);
-    const entries = Object.entries(cats).sort((a,b)=>b[1]-a[1]);
-    const max = entries.length ? entries[0][1] : 1;
+    const Y = repYear, M = repMonth;
+    const txns = DB.transactions().filter(t => { const d = new Date(t.date); return d.getFullYear()===Y && d.getMonth()===M; });
+    const sumDir = (dir) => txns.filter(t=>t.dir===dir).reduce((s,t)=>s+t.amount,0);
+    const exp = sumDir('expense'), inc = sumDir('income'), debt = sumDir('debt'), pay = sumDir('payment');
+    const net = inc - exp;
+
+    const pm = M===0 ? {y:Y-1,m:11} : {y:Y,m:M-1};
+    const prev = DB.monthTotals(pm.y, pm.m);
+    const chg = (cur, old) => old>0 ? Math.round((cur-old)/old*100) : null;
+    const chgBadge = (v, goodWhenDown) => {
+      if (v===null || v===0) return '';
+      const good = goodWhenDown ? v<0 : v>0;
+      return `<span style="font-size:11px;color:${good?'var(--green)':'var(--red)'}">${v>0?'▲':'▼'}%${Math.abs(v)}</span>`;
+    };
+
+    const catMap = {};
+    txns.filter(t=>t.dir==='expense').forEach(t=>catMap[t.categoryId]=(catMap[t.categoryId]||0)+t.amount);
+    const catSegs = Object.entries(catMap).sort((a,b)=>b[1]-a[1])
+      .map(([cid,v])=>{ const c=DB.category(cid)||{name:'Diğer',color:'#888'}; return {color:c.color,value:v,name:c.name}; });
+
+    const acctMap = {};
+    txns.filter(t=>t.dir==='expense').forEach(t=>acctMap[t.accountId]=(acctMap[t.accountId]||0)+t.amount);
+    const acctEntries = Object.entries(acctMap).sort((a,b)=>b[1]-a[1]);
+    const acctMax = acctEntries.length?acctEntries[0][1]:1;
+
+    const balances = DB.people().map(p=>({p, bal:DB.personBalance(p.id)})).filter(x=>x.bal!==0);
+    const owedToMe = balances.filter(x=>x.bal>0).sort((a,b)=>b.bal-a.bal);
+    const iOwe = balances.filter(x=>x.bal<0).sort((a,b)=>a.bal-b.bal);
+
+    const maxExp = txns.filter(t=>t.dir==='expense').sort((a,b)=>b.amount-a.amount)[0];
+    const avgDaily = exp / new Date(Y, M+1, 0).getDate();
+    const topCat = catSegs[0] ? catSegs[0].name : '—';
+    const stat = (label, val) => `<div class="rep-stat"><div class="muted" style="font-size:12px">${label}</div><div style="font-size:16px;font-weight:600">${val}</div></div>`;
 
     view.innerHTML = `
       <div class="appbar"><h1>Raporlar</h1>
-        <div style="display:flex;gap:6px">
-          <button class="btn btn-sm btn-ghost" id="exp-pdf">${icon('pdf',16)} PDF</button>
-          <button class="btn btn-sm btn-ghost" id="exp-xls">${icon('excel',16)} Excel</button>
+        <div style="display:flex;gap:8px">
+          <button class="bell-btn" id="exp-pdf" aria-label="PDF" style="color:var(--red)">${icon('pdf',18)}</button>
+          <button class="bell-btn" id="exp-xls" aria-label="Excel" style="color:var(--green)">${icon('excel',18)}</button>
         </div></div>
 
       <div class="seg" style="margin-bottom:14px">
         <button id="m-prev">${icon('back2',16)}</button>
-        <button class="on" style="flex:2">${MONTHS[repMonth]} ${repYear}</button>
+        <button class="on" style="flex:2">${MONTHS[M]} ${Y}</button>
         <button id="m-next">${icon('chevR',16)}</button>
       </div>
 
-      <div class="row-grid">
-        <div class="card" style="padding:14px"><div class="muted" style="font-size:12px">Harcama</div><div style="font-size:22px;font-weight:600;color:var(--red)">${fmt(exp)}</div></div>
-        <div class="card" style="padding:14px"><div class="muted" style="font-size:12px">Tahsilat</div><div style="font-size:22px;font-weight:600;color:var(--green)">${fmt(inc)}</div></div>
+      <div class="rep-hero">
+        <div class="muted" style="font-size:12px">Bu ay net durum</div>
+        <div style="font-size:30px;font-weight:600;color:${net>=0?'var(--green)':'var(--red)'}">${fmtSigned(net)}</div>
+        <div style="font-size:12px;color:var(--text-2)">${txns.length} işlem</div>
       </div>
 
-      <div class="sec-head"><h2>Kategoriye göre harcama</h2></div>
-      ${entries.length ? entries.map(([cid,val]) => {
-        const c = DB.category(cid) || { name:'Diğer', color:'#5C6B82' };
-        return `<div class="repbar"><div class="top"><span>${c.name}</span><b>${fmt(val)}</b></div>
-          <div class="track"><span style="width:${Math.round(val/max*100)}%;background:${c.color}"></span></div></div>`;
-      }).join('') : `<div class="empty"><p>Bu ay harcama kaydı yok.</p></div>`}
+      <div class="row-grid" style="margin-top:12px">
+        <div class="card" style="padding:13px"><div class="muted" style="font-size:12px">Harcama ${chgBadge(chg(exp,prev.exp),true)}</div><div style="font-size:20px;font-weight:600;color:var(--red)">${fmt(exp)}</div></div>
+        <div class="card" style="padding:13px"><div class="muted" style="font-size:12px">Tahsilat ${chgBadge(chg(inc,prev.inc),false)}</div><div style="font-size:20px;font-weight:600;color:var(--green)">${fmt(inc)}</div></div>
+        <div class="card" style="padding:13px"><div class="muted" style="font-size:12px">Borç (verilen)</div><div style="font-size:20px;font-weight:600;color:var(--amber)">${fmt(debt)}</div></div>
+        <div class="card" style="padding:13px"><div class="muted" style="font-size:12px">Ödeme</div><div style="font-size:20px;font-weight:600;color:var(--navy-600)">${fmt(pay)}</div></div>
+      </div>
+
+      <div class="sec-head"><h2>Kategori dağılımı</h2></div>
+      ${catSegs.length ? `
+        <div class="donut-wrap"><div class="donut" style="background:conic-gradient(${conicStr(catSegs, exp)})"><div class="donut-hole"><div class="muted" style="font-size:11px">Harcama</div><div style="font-weight:600;font-size:15px">${fmt(exp)}</div></div></div></div>
+        <div class="card">${catSegs.map(s=>`<div class="legend-row"><span class="dot" style="background:${s.color}"></span><span class="lg-name">${s.name}</span><span class="lg-val">${fmt(s.value)}</span><span class="lg-pct">%${Math.round(s.value/exp*100)}</span></div>`).join('')}</div>
+      ` : `<div class="empty"><p>Bu ay harcama kaydı yok.</p></div>`}
+
+      ${acctEntries.length ? `<div class="sec-head"><h2>Karta göre harcama</h2></div>
+      ${acctEntries.map(([aid,v])=>{ const a=DB.account(aid)||{name:'—',color:'#888'}; return `<div class="repbar"><div class="top"><span>${a.name}</span><b>${fmt(v)}</b></div><div class="track"><span style="width:${Math.round(v/acctMax*100)}%;background:${a.color}"></span></div></div>`; }).join('')}` : ''}
+
+      ${(owedToMe.length||iOwe.length) ? `<div class="sec-head"><h2>Cari durum (genel)</h2></div>
+      <div class="card">
+        ${owedToMe.length?`<div class="legend-row" style="font-weight:500"><span class="lg-name" style="color:var(--green)">Bana borçlu olanlar</span><span class="lg-val" style="color:var(--green)">${fmt(owedToMe.reduce((s,x)=>s+x.bal,0))}</span></div>${owedToMe.slice(0,5).map(x=>`<div class="legend-row"><span class="lg-name muted">${x.p.name}</span><span class="lg-val">${fmt(x.bal)}</span></div>`).join('')}`:''}
+        ${iOwe.length?`<div class="legend-row" style="font-weight:500;${owedToMe.length?'border-top:0.5px solid var(--line)':''}"><span class="lg-name" style="color:var(--red)">Benim borçlarım</span><span class="lg-val" style="color:var(--red)">${fmt(-iOwe.reduce((s,x)=>s+x.bal,0))}</span></div>${iOwe.slice(0,5).map(x=>`<div class="legend-row"><span class="lg-name muted">${x.p.name}</span><span class="lg-val">${fmt(-x.bal)}</span></div>`).join('')}`:''}
+      </div>` : ''}
+
+      <div class="sec-head"><h2>İstatistikler</h2></div>
+      <div class="rep-stats">
+        ${stat('İşlem sayısı', txns.length)}
+        ${stat('Günlük ort. harcama', fmt(avgDaily))}
+        ${stat('En yüksek harcama', maxExp?fmt(maxExp.amount):'—')}
+        ${stat('En çok kategori', topCat)}
+      </div>
     `;
     view.querySelector('#m-prev').onclick = () => { repMonth--; if(repMonth<0){repMonth=11;repYear--;} render(); };
     view.querySelector('#m-next').onclick = () => { repMonth++; if(repMonth>11){repMonth=0;repYear++;} render(); };

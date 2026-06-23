@@ -117,6 +117,8 @@ const UI = (() => {
     coral:  { name:'Mercan',   400:'#F0785A', 600:'#D85A30', 800:'#9E3F1E', 900:'#6B2A13' },
     pink:   { name:'Pembe',    400:'#E06A93', 600:'#C53E6B', 800:'#8E2A4C', 900:'#5E1B33' },
     slate:  { name:'Antrasit', 400:'#64748B', 600:'#3E4A5E', 800:'#26303F', 900:'#161D27' },
+    ocean:  { name:'Okyanus',  400:'#22A7C4', 600:'#0E7C99', 800:'#0A5468', 900:'#063744' },
+    bordo:  { name:'Bordo',    400:'#C2455E', 600:'#9B1C31', 800:'#6E1322', 900:'#490C16' },
   };
   function accents() { return ACCENTS; }
   function applyTheme() {
